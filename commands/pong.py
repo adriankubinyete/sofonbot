@@ -1,14 +1,16 @@
-import logging
-
+# implementation of ping command as cog
 import discord
+from discord.ext import commands
 from discord import app_commands
+from utils.methods import methods
 
-logger = logging.getLogger("discord")
+class PongCommand(commands.Cog):
+    def __init__(self, bot):
+        self.bot = bot    
+        
+    @app_commands.command(name="pong", description="Ping")
+    async def pong(self, interaction: discord.Interaction):
+        await interaction.response.send_message("Ping!")
 
-@app_commands.command(name="pong", description="ping")
-async def pong(
-    interaction: discord.Interaction,
-) -> None:
-    """Pong command"""
-    await interaction.response.send_message("Ping!", ephemeral=True)
-
+async def setup(bot):
+    await bot.add_cog(PingCommand(bot))

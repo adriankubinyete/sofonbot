@@ -1,14 +1,16 @@
 from typing import Optional
 import discord
-import importlib
-import inspect
 import os
 import time
+import logging
 from aiohttp import ClientSession
 from discord import app_commands
 from discord.ext import commands
+from utils.database import Database
 
-class SofonBot(discord.Client):
+logger = logging.getLogger("discord.sofonbot")
+
+class SofonBot(commands.Bot):  # Mudamos para herdar de commands.Bot
     def __init__(
         self,
         *args,
@@ -17,21 +19,17 @@ class SofonBot(discord.Client):
         web_client: ClientSession,
         intents: Optional[discord.Intents] = None,
         testing_guild_id: Optional[int] = None,
+        db: Database = None,
     ):
         """Initialization of the client."""
         if intents is None:
             intents = discord.Intents.default()
         intents.members = True
         
-        super().__init__(intents=intents)
+        super().__init__(command_prefix=command_prefix if when_mentioned else None, intents=intents)  # Usamos commands.Bot
         self.web_client = web_client
         self.testing_guild_id = testing_guild_id
-        self.tree = app_commands.CommandTree(self)
-        self.command_prefix = command_prefix
-        self.prefix_commands = commands.Bot(
-            command_prefix=command_prefix if when_mentioned else None,
-            intents=intents,
-        )  # Usado para adicionar eventos e comandos prefixados.
+        self.db = db  # Adicionando o banco de dados à instância
 
     async def on_ready(self):
         await self.wait_until_ready()
@@ -46,69 +44,34 @@ class SofonBot(discord.Client):
     async def setup_hook(self) -> None:
         """Setup hook for loading commands and events."""
         print("setup_hook: initializing configuration...")
-
+        
         try:
-            await self.load_slash_commands()
-            await self.load_prefix_commands()
-            await self.load_events()
-
-            print("setup_hook: syncing tree...")    
-            await self.tree.sync()
-
+            # Register cogs
+            await self.load_cogs()
+            
+            # Sync tree after loading cogs
+            start_time = time.time()
+            await self.tree.sync()  # `self.tree` já existe
+            elapsed_time = time.time() - start_time
+            logger.info(f'Tree took {elapsed_time:.2f} seconds to sync.')
+            
         except Exception as e:
-            print(f"setup_hook: error loading\n{e}")
+            logger.exception(f"setup_hook: error loading\n{e}")
 
-    async def load_slash_commands(self) -> None:
-        """Load slash commands dynamically."""
-        # print('load_slash_command: starting...')
-        start_time = time.time()
-        commands_folder = os.path.join(os.path.dirname(__file__), "commands")
+    async def load_cogs(self) -> None:
+        cog_dirs = ["commands", "events"]
+        cogloader_start_time = time.time()
         
-        for filename in os.listdir(commands_folder):
-            if filename.endswith(".py") and filename != "__init__.py":
-                module_name = f"commands.{filename[:-3]}"  # Remove ".py" extension
-                module = importlib.import_module(module_name)
+        for directory in cog_dirs:
+            for filename in os.listdir(directory):
+                if filename.endswith(".py") and not filename.startswith("__"):
+                    module_name = f"{directory}.{filename[:-3]}"
+                    try:
+                        print('Loading cog:', module_name)
+                        await self.load_extension(module_name)  # Usamos load_extension diretamente
+                        logger.info(f"Loaded cog: {module_name}")
+                    except Exception as e:
+                        logger.exception(f"load_cogs: error loading {module_name}\n{e}")
 
-                # Inspeciona todas as funções do módulo
-                for name, obj in inspect.getmembers(module):
-                    if isinstance(obj, app_commands.Command):
-                        self.tree.add_command(obj)
-                        # print(f"{module_name} -> {obj.name}")
-        elapsed_time = time.time() - start_time
-        print(f'load_slash_command: took {elapsed_time:.2f} seconds to load slash commands.')
-                        
-    async def load_prefix_commands(self) -> None:
-        """Placeholder for loading prefix-based commands."""
-        # print('load_prefix_commands: starting...')
-        start_time = time.time()
-        print("load_prefix_commands: Prefix-based commands is not yet implemented.")
-        elapsed_time = time.time() - start_time
-        print(f'load_prefix_commands: took {elapsed_time:.2f} seconds to load prefix commands.')
-        
-    async def load_events(self) -> None:
-        """Carrega eventos dinamicamente."""
-        # print('load_events: starting...')
-        start_time = time.time()
-        
-        events_folder = os.path.join(os.path.dirname(__file__), "events")
-
-        for filename in os.listdir(events_folder):
-            if filename.endswith(".py") and filename != "__init__.py":
-                module_name = f"events.{filename[:-3]}"  # Remove ".py" extension
-                module = importlib.import_module(module_name)
-
-                # Verifica se o módulo possui funções para eventos
-                for name, obj in inspect.getmembers(module):
-                    if name.startswith("on_") and callable(obj):  # Nome do evento começa com "on_" e é uma função
-                        
-                        # confere se esse método já não existe na classe SofonBot
-                        if hasattr(self, name):
-                            # print(f"{module_name} -> {name} (already exists, skipping)")
-                            continue
-                        
-                        # adiciona esse método à classe SofonBot
-                        setattr(self, name, obj)
-                        # print(f"{module_name} -> {name}")
-                        
-        elapsed_time = time.time() - start_time
-        print(f'load_events: took {elapsed_time:.2f} seconds to load events commands.')
+        cogloader_elapsed_time = time.time() - cogloader_start_time
+        logger.info(f"Cogs took {cogloader_elapsed_time:.2f} seconds to load.")
