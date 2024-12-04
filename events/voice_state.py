@@ -3,7 +3,7 @@ from discord.ext import commands
 import logging
 
 # Configuração do logger
-logger = logging.getLogger("discord")
+logger = logging.getLogger("sofonbot.event.voice_state")
 
 class VoiceStateMonitor(commands.Cog):
     def __init__(self, bot: commands.Bot):

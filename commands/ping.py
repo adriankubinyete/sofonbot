@@ -1,8 +1,10 @@
-# implementation of ping command as cog
+import logging
 import discord
 from discord.ext import commands
 from discord import app_commands
 from utils.methods import methods
+
+logger = logging.getLogger("sofonbot.command.ping")
 
 class PingCommand(commands.Cog):
     def __init__(self, bot):
@@ -10,6 +12,7 @@ class PingCommand(commands.Cog):
         
     @app_commands.command(name="ping", description="Pong")
     async def ping(self, interaction: discord.Interaction):
+        logger.info("Ping command called")
         await interaction.response.send_message("Pong!")
 
 async def setup(bot):

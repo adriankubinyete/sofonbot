@@ -1,33 +1,40 @@
 from motor.motor_asyncio import AsyncIOMotorClient
-import os
+import logging
+
+logger = logging.getLogger("database")
 
 class Database:
     _instance = None
 
-    def __new__(cls):
+    def __new__(cls, *args, **kwargs):
         if cls._instance is None:
             cls._instance = super(Database, cls).__new__(cls)
-            cls._instance.client = None
-            cls._instance.db = None
         return cls._instance
+
+    def __init__(self, uri: str = None, database: str = None):
+        # Inicializar apenas na primeira vez
+        if not hasattr(self, "_initialized"):
+            self.client = None
+            self.db = None
+            self.uri = uri
+            self.database_name = database
+            self._initialized = True
 
     async def connect(self):
         """Conecta ao MongoDB."""
         if self.client is None:
-            uri = os.getenv("DATABASE_URI")
-            db_name = os.getenv("DATABASE_NAME")
-            if not uri or not db_name:
-                raise ValueError("As variáveis DATABASE_URI e DATABASE_NAME precisam estar definidas.")
+            if not self.uri or not self.database_name:
+                raise ValueError("URI e nome do banco de dados devem ser fornecidos.")
             
-            self.client = AsyncIOMotorClient(uri)
-            self.db = self.client[db_name]
-            print(f"Conectado ao banco de dados: {db_name}")
+            self.client = AsyncIOMotorClient(self.uri)
+            self.db = self.client[self.database_name]
+            logger.info(f"Conectado ao banco de dados: {self.database_name}")
 
     async def disconnect(self):
         """Desconecta do MongoDB."""
         if self.client:
             self.client.close()
-            print("Desconectado do banco de dados.")
+            logger.info("Desconectado do banco de dados.")
             self.client = None
             self.db = None
 
@@ -36,3 +43,12 @@ class Database:
         if not self.db:
             raise ConnectionError("O banco de dados não está conectado.")
         return self.db[collection_name]
+
+    async def __aenter__(self):
+        """Suporte ao uso de async with."""
+        await self.connect()
+        return self
+
+    async def __aexit__(self, exc_type, exc_val, exc_tb):
+        """Garante a desconexão ao sair do contexto."""
+        await self.disconnect()
