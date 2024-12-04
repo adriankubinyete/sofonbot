@@ -6,7 +6,7 @@ import colorlog
 from aiohttp import ClientSession
 from dotenv import load_dotenv
 from typing import List, Optional
-from utils.database import Database
+from utils.database import DatabaseClient
 
 from SofonBot import SofonBot
 
@@ -59,18 +59,15 @@ async def main():
     
     # start async session
     async with ClientSession() as web_client:
-        async with Database(
-            uri=os.getenv("DATABASE_URI"), 
-            database=os.getenv("DATABASE_NAME")
-        ) as mongodb_client:
-            async with SofonBot(
-                command_prefix=os.getenv("BOT_PREFIX", "s!"),
-                when_mentioned=True,
-                web_client=web_client,
-                testing_guild_id=os.getenv("BOT_TESTING_GUILD_ID", None),
-                database=mongodb_client
-            ) as client:
-                await client.start(os.getenv("BOT_TOKEN", ""))
+        db = DatabaseClient()
+        async with SofonBot(
+            command_prefix=os.getenv("BOT_PREFIX", "s!"),
+            when_mentioned=True,
+            web_client=web_client,
+            testing_guild_id=os.getenv("BOT_TESTING_GUILD_ID", None),
+            database=db
+        ) as client:
+            await client.start(os.getenv("BOT_TOKEN", ""))
             
 if __name__ == "__main__":
     load_dotenv()

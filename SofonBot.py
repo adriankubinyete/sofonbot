@@ -6,7 +6,7 @@ import logging
 from aiohttp import ClientSession
 from discord import app_commands
 from discord.ext import commands
-from utils.database import Database
+from utils.database import DatabaseClient
 
 logger = logging.getLogger("sofonbot.core")
 
@@ -19,7 +19,7 @@ class SofonBot(commands.Bot):  # Mudamos para herdar de commands.Bot
         web_client: ClientSession,
         intents: Optional[discord.Intents] = None,
         testing_guild_id: Optional[int] = None,
-        database: Database = None,
+        database: DatabaseClient = None,
     ):
         """Initialization of the client."""
         if intents is None:
