@@ -2,7 +2,6 @@ import logging
 import discord
 from discord.ext import commands
 from discord import app_commands
-from utils.methods import methods
 
 logger =  logging.getLogger("sofonbot.command.pong")
 

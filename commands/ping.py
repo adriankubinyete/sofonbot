@@ -2,7 +2,7 @@ import logging
 import discord
 from discord.ext import commands
 from discord import app_commands
-from utils.methods import methods
+from utils.checks import funny
 
 logger = logging.getLogger("sofonbot.command.ping")
 
