@@ -23,7 +23,7 @@ async def main():
     
     # creating the handlers
     file_handler = logging.handlers.RotatingFileHandler(
-        filename=f"{os.getenv('LOG_VOLUME')}/everything.log",
+        filename=f"{os.getenv('LOG_VOLUME')}/sofon.log",
         encoding="utf-8",
         maxBytes=32 * 1024 * 1024,  #32 MiB
         backupCount=5,  # Rotate through 5 files
