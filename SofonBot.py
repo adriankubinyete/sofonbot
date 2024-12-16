@@ -25,6 +25,8 @@ class SofonBot(commands.Bot):  # Mudamos para herdar de commands.Bot
         if intents is None:
             intents = discord.Intents.default()
         intents.members = True
+        intents.voice_states = True
+        intents.guilds = True
         
         super().__init__(command_prefix=command_prefix if when_mentioned else None, intents=intents)  # Usamos commands.Bot
         self.web_client = web_client

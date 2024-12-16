@@ -47,7 +47,7 @@ class Commands(commands.Cog):
                 else:
                     print(f"Canal de voz {channel_id} não encontrado no servidor {guild.name}.")
             else:
-                print(f"Servidor {guild_id} não encontrado.")
+                print(f"Servidor {guild_id} não encontrado para o canal {channel_id}.")
 
     # sets up a channel that, once joined, will create tempchannels for each user that joins
     # make a way to add new tempchannels
